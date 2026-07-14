@@ -2,32 +2,46 @@ import sys
 import threading
 import time
 
-# --- TASK 1.1: MOCK PCB STATE ---
-# standard python variables for now instead of full objects
-p1_rem = 0.9
-p2_rem = 0.3
-p3_rem = 1.1
-
-
-def simple_worker(name, run_time):
-    # spawning worker threads here to execute a slice of work
-    print("[RUNNING] -> " + name + " started execution.")
-    time.sleep(run_time)  # testing sleep for CPU simulation
-    print("[FINISHED] -> " + name + " is done.")
-
+# Task 1.1 simple PCB class to track process state and remaining time
+class ProcessPCB:
+    def __init__(self, pid, name, burst_time):
+        self.pid = pid
+        self.name = name
+        self.burst_time = burst_time
+        self.remaining_time = burst_time
+        self.state = "READY" # tracking state transitions here
 
 if __name__ == "__main__":
-    # creating 3 explicit processes matching requirements
-    t1 = threading.Thread(target=simple_worker, args=("Task-A", p1_rem))
-    t2 = threading.Thread(target=simple_worker, args=("Task-B", p2_rem))
-    t3 = threading.Thread(target=simple_worker, args=("Task-C", p3_rem))
-
-    t1.start()
-    t2.start()
-    t3.start()
-
-    # waiting for child processes created previously to wind down safely
-    t1.join()
-    t2.join()
-    t3.join()
-    print("day 1 script finished.")
+    # creating 3 explicit processes matching requirements[cite: 1, 2]
+    my_tasks = [
+        ProcessPCB(101, "Task-A", 0.9),
+        ProcessPCB(102, "Task-B", 0.3),
+        ProcessPCB(103, "Task-C", 1.1)
+    ]
+    
+    quantum = 0.4
+    rem_queue = list(my_tasks) # making a copy to iterate over loop mechanics
+    
+    # scheduling loop keeps spinning until all work items are cleared
+    while len(rem_queue) > 0:
+        # pulling the next process from our queue
+        current = rem_queue.pop(0)
+        
+        print("[RUNNING] -> PID " + str(current.pid) + " is entering execution track.")
+        
+        # calculate run slice durations manually
+        if current.remaining_time > quantum:
+            run_time = quantum
+        else:
+            run_time = current.remaining_time
+            
+        time.sleep(run_time)
+        current.remaining_time -= run_time
+        
+        if current.remaining_time <= 0:
+            current.state = "TERMINATED"
+            print("[FINISHED] -> PID " + str(current.pid) + " is fully done.")
+        else:
+            current.state = "READY"
+            print("[PREEMPTED] -> PID " + str(current.pid) + " put back into queue.")
+            rem_queue.append(current)
