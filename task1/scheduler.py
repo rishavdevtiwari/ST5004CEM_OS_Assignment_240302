@@ -11,8 +11,43 @@ class ProcessPCB:
         self.remaining_time = burst_time
         self.state = "READY" # tracking state transitions here
 
+# mutex lock for shared console print issues
+shared_log = []
+log_lock = threading.Lock() # standard mutex for shared console print issues
+
+def safe_print(msg):
+    # safe zone starts here so logs don't mess up
+    log_lock.acquire()
+    try:
+        shared_log.append(msg)
+        print(msg)
+    finally:
+        # releasing the lock after writing safely
+        log_lock.release()
+
+# worker thread target func simulating workload execution
+def run_process_slice(current, quantum):
+    # spawning worker threads here to execute a slice of work
+    safe_print("[RUNNING] -> PID " + str(current.pid) + " is entering execution track.")
+    
+    # calculate run slice durations manually
+    if current.remaining_time > quantum:
+        run_time = quantum
+    else:
+        run_time = current.remaining_time
+        
+    time.sleep(run_time)
+    current.remaining_time -= run_time
+    
+    if current.remaining_time <= 0:
+        current.state = "TERMINATED"
+        safe_print("[FINISHED] -> PID " + str(current.pid) + " is fully done.")
+    else:
+        current.state = "READY"
+        safe_print("[PREEMPTED] -> PID " + str(current.pid) + " put back into queue.")
+
 if __name__ == "__main__":
-    # creating 3 explicit processes matching requirements[cite: 1, 2]
+    # creating 3 explicit processes matching requirements
     my_tasks = [
         ProcessPCB(101, "Task-A", 0.9),
         ProcessPCB(102, "Task-B", 0.3),
@@ -27,21 +62,13 @@ if __name__ == "__main__":
         # pulling the next process from our queue
         current = rem_queue.pop(0)
         
-        print("[RUNNING] -> PID " + str(current.pid) + " is entering execution track.")
+        # wrapping execution in a thread
+        # context switching to a thread execution context block
+        t = threading.Thread(target=run_process_slice, args=(current, quantum))
+        t.start()
         
-        # calculate run slice durations manually
-        if current.remaining_time > quantum:
-            run_time = quantum
-        else:
-            run_time = current.remaining_time
-            
-        time.sleep(run_time)
-        current.remaining_time -= run_time
+        # waiting for child process created previously to wind down safely
+        t.join()
         
-        if current.remaining_time <= 0:
-            current.state = "TERMINATED"
-            print("[FINISHED] -> PID " + str(current.pid) + " is fully done.")
-        else:
-            current.state = "READY"
-            print("[PREEMPTED] -> PID " + str(current.pid) + " put back into queue.")
+        if current.state != "TERMINATED":
             rem_queue.append(current)
