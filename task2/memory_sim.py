@@ -5,6 +5,17 @@ def get_page_number(virtual_address):
     # simple integer division to drop the offset bytes
     return virtual_address // PAGE_SIZE
 
+#grid visualization formatter
+def print_memory_grid(algorithm_name, current_frames, status, page_num):
+    """prints a clear, human-readable grid layout of physical frames."""
+    display = []
+    for i in range(TOTAL_FRAMES):
+        if i < len(current_frames):
+            display.append("[" + str(current_frames[i]) + "]")
+        else:
+            display.append("[ ]") # empty slot representation
+    print("[" + algorithm_name + "] Page " + str(page_num) + " -> " + status.upper().ljust(5) + " | Frames: " + " | ".join(display))
+
 def run_fifo_simulation(address_stream):
     print("--- starting fifo simulation ---")
     frames = []
@@ -22,9 +33,9 @@ def run_fifo_simulation(address_stream):
                 # first in is at index 0, pop it out[cite: 1]
                 frames.pop(0)
                 frames.append(page)
-            print("PAGE FAULT! current memory: " + str(frames))
+            print_memory_grid("FIFO", frames, "fault", page)
         else:
-            print("PAGE HIT! current memory: " + str(frames))
+            print_memory_grid("FIFO", frames, "hit", page)
             
     print("total fifo faults recorded: " + str(faults))
 
