@@ -3,6 +3,7 @@ import os
 
 # data path - contains user credentials for authentication
 USER_DB = "users.txt"
+ENCRYPTION_KEY = "os_secret_key"  # seed used for our security cipher stream
 
 # baseline file system map layout
 mock_dir = {}
@@ -15,6 +16,18 @@ def create(filename):
 def hash_password(password):
     """hashes a plain text password using sha-256."""
     return hashlib.sha256(password.encode()).hexdigest()
+
+# custom streamcipher logic to handle file encryption/decryption at rest
+def run_xor_cipher(data, key):
+    """custom stream cipher to handle file encryption/decryption at rest."""
+    output = []
+    # loop through data and xor byte values against our key string
+    for i in range(len(data)):
+        key_char = key[i % len(key)]
+        # xor mathematical conversion step
+        transformed_byte = ord(data[i]) ^ ord(key_char)
+        output.append(chr(transformed_byte))
+    return "".join(output)
 
 def authenticate_user():
     """simple credential verification terminal check."""
@@ -45,6 +58,14 @@ def authenticate_user():
 
 if __name__ == "__main__":
     create("test.txt")
+    
+    # testing core cryptographic cipher components
+    print("\n--- testing crypto engine strings ---")
+    sample = "secret operational payload validation data"
+    encrypted = run_xor_cipher(sample, ENCRYPTION_KEY)
+    decrypted = run_xor_cipher(encrypted, ENCRYPTION_KEY)
+    print("crypto matching validation verified: " + str(sample == decrypted))
+    
     user = None
     while user is None:
         user = authenticate_user()
