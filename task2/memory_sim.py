@@ -38,6 +38,46 @@ def run_fifo_simulation(address_stream):
             print_memory_grid("FIFO", frames, "hit", page)
             
     print("total fifo faults recorded: " + str(faults))
+    return faults
+
+#lru algorithm interface
+def run_lru_simulation(address_stream):
+    print("\n--- starting lru simulation ---")
+    frames = []
+    access_history = {} # dictionary tracker to keep logical clock ticks
+    faults = 0
+    logical_time = 0 # increments on every page reference step
+    
+    for addr in address_stream:
+        logical_time += 1
+        page = get_page_number(addr)
+        
+        # update time rank on every hit or miss access alike
+        access_history[page] = logical_time
+        
+        if page in frames:
+            print_memory_grid("LRU", frames, "hit", page)
+        else:
+            faults += 1
+            if len(frames) < TOTAL_FRAMES:
+                frames.append(page)
+            else:
+                # search the active grid to track down the minimum used frame slot
+                oldest_page = frames[0]
+                min_time = access_history[oldest_page]
+                
+                for f in frames:
+                    if access_history[f] < min_time:
+                        min_time = access_history[f]
+                        oldest_page = f
+                        
+                # boot out the unaccessed page context link
+                frames.remove(oldest_page)
+                frames.append(page)
+            print_memory_grid("LRU", frames, "fault", page)
+            
+    print("total lru faults recorded: " + str(faults))
+    return faults
 
 if __name__ == "__main__":
     # quick sanity verification test loop
