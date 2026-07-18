@@ -29,9 +29,34 @@ def run_xor_cipher(data, key):
         output.append(chr(transformed_byte))
     return "".join(output)
 
+#access control matrix privileges evaluation function
+
+
+def check_permission(user_context, file_permissions, required_mode):
+    """evaluates posix-like rwx configurations for owner/group/others."""
+    parts = file_permissions.split(":")
+    owner_perms = parts[0]
+    group_perms = parts[1]
+    other_perms = parts[2]
+
+    # rule 1: superuser administrator exception rule check
+    if user_context["username"] == "admin":
+        return True
+
+    # rule 2: evaluate user group assignments privileges match
+    if required_mode in group_perms and user_context["group"] == "admin_group":
+        return True
+
+    # rule 3: fallback boundary check on guest privileges parameters
+    if required_mode in other_perms:
+        return True
+
+    return False
+
+
 def authenticate_user():
     """simple credential verification terminal check."""
-    print("--- Secure File System Login ---")
+    print("--- Secure File System Login --")
     username = input("Enter Username: ").strip()
     password = input("Enter Password: ").strip()
 
@@ -57,15 +82,11 @@ def authenticate_user():
     return None
 
 if __name__ == "__main__":
-    create("test.txt")
+    create("confidential.txt", "rw:r:")
     
-    # testing core cryptographic cipher components
-    print("\n--- testing crypto engine strings ---")
-    sample = "secret operational payload validation data"
-    encrypted = run_xor_cipher(sample, ENCRYPTION_KEY)
-    decrypted = run_xor_cipher(encrypted, ENCRYPTION_KEY)
-    print("crypto matching validation verified: " + str(sample == decrypted))
+    mock_guest = {"username": "guest_user", "group": "guest_group"}
+    file_meta = mock_dir["confidential.txt"]
     
-    user = None
-    while user is None:
-        user = authenticate_user()
+    print("\n--- executing guest authorization check routine ---")
+    has_read = check_permission(mock_guest, file_meta["perms"], "r")
+    print("guest authorization clearance check output: " + str(has_read))
