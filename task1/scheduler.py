@@ -14,6 +14,9 @@ class ProcessPCB:
 # mutex lock for shared console print issues
 shared_log = []
 log_lock = threading.Lock() # standard mutex for shared console print issues
+#locked resources for demonstration of deadlock scenario
+lock_a = threading.Lock()
+lock_b = threading.Lock()
 
 def safe_print(msg):
     # safe zone starts here so logs don't mess up
@@ -46,6 +49,21 @@ def run_process_slice(current, quantum):
         current.state = "READY"
         safe_print("[PREEMPTED] -> PID " + str(current.pid) + " put back into queue.")
 
+#deadlock scenario demonstration function
+def broken_deadlock_routine(thread_num, first_lock, second_lock):
+    safe_print("[DEADLOCK-WARN] -> thread " + str(thread_num) + " checking locks.")
+    first_lock.acquire()
+    safe_print("[DEADLOCK-WARN] -> thread " + str(thread_num) + " holding resource 1.")
+    time.sleep(0.2) # force context switch to trigger deadlock scenario cleanly
+    second_lock.acquire() # system locks here permanently if unmitigated
+    try:
+        safe_print("secured both resources successfully.")
+    finally:
+        second_lock.release()
+        first_lock.release()
+
+
+
 if __name__ == "__main__":
     # creating 3 explicit processes matching requirements
     my_tasks = [
@@ -72,3 +90,8 @@ if __name__ == "__main__":
         
         if current.state != "TERMINATED":
             rem_queue.append(current)
+            
+    print("\n testing out experimental deadlock simulaton")
+    # this call structure will freeze up if both run actively at the same time
+    # t_dead1 = threading.Thread(target=broken_deadlock_routine, args=(1, lock_a, lock_b))
+    # t_dead2 = threading.Thread(target=broken_deadlock_routine, args=(2, lock_b, lock_a))
