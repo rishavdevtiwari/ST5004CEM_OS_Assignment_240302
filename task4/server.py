@@ -13,7 +13,7 @@ def handle_client_connection(client_socket, client_address):
         while True:
             raw_data = client_socket.recv(1024).decode("utf-8")
             if not raw_data: break #no data received, client closed connection
-            print("received raw payload: " + raw_data)
+
             
             print(f"[SERVER] -> received raw payload: {raw_data}")
             # ipc protovol envelope validation and command execution logic
