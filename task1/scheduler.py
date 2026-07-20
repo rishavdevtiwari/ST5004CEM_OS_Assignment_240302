@@ -63,6 +63,34 @@ def broken_deadlock_routine(thread_num, first_lock, second_lock):
         first_lock.release()
 
 
+#deadlock preventation implementation 
+
+def handle_resources_safely(thread_num, first_lock, second_lock):
+    safe_print("[DEADLOCK-TEST] -> thread " + str(thread_num) + " trying to grab locks safely.")
+
+    # strict lexical sorting order enforcement ensures no circular wait can form[cite: 1]
+    # we sort based on internal python memory ids of the lock instances
+    if id(first_lock) < id(second_lock):
+        lock_1 = first_lock
+        lock_2 = second_lock
+    else:
+        lock_1 = second_lock
+        lock_2 = first_lock
+
+    # grabbing first resource in order
+    lock_1.acquire()
+    safe_print("[DEADLOCK-TEST] -> thread " + str(thread_num) + " got lock number 1.")
+    time.sleep(0.1)  # tiny delay to prove that cross-over circular wait is completely avoided
+
+    # grabbing second resource in order
+    lock_2.acquire()
+    try:
+        safe_print("[DEADLOCK-TEST] -> thread " + str(thread_num) + " got both locks smoothly!")
+    finally:
+        # releasing both allocations properly
+        lock_2.release()
+        lock_1.release()
+
 
 if __name__ == "__main__":
     # creating 3 explicit processes matching requirements
@@ -91,7 +119,18 @@ if __name__ == "__main__":
         if current.state != "TERMINATED":
             rem_queue.append(current)
             
-    print("\n testing out experimental deadlock simulaton")
+    safe_print("\n testing out experimental deadlock simulaton")
     # this call structure will freeze up if both run actively at the same time
     # t_dead1 = threading.Thread(target=broken_deadlock_routine, args=(1, lock_a, lock_b))
     # t_dead2 = threading.Thread(target=broken_deadlock_routine, args=(2, lock_b, lock_a))
+    # spin up two competing threads passing identical locks in reversed order
+    thread1 = threading.Thread(target=handle_resources_safely, args=(1, lock_a, lock_b))
+    thread2 = threading.Thread(target=handle_resources_safely, args=(2, lock_b, lock_a))
+
+    thread1.start()
+    thread2.start()
+
+    # waiting for child processes created previously to wind down safely
+    thread1.join()
+    thread2.join()
+    safe_print("deadlock test finished successfully without any issues.")
