@@ -3,12 +3,13 @@ import os
 import time
 
 # data path - contains user credentials for authentication
+
 USER_DB = "users.txt"
 AUDIT_LOG = "audit.log"
 ENCRYPTION_KEY = "os_secret_key"  # seed used for our security cipher stream
 
 
-#security helpers - audit lohher hock tracking
+#security helpers - audit logger hook tracking
 def write_audit_log(user, action, target_file, status):
     """automatically writes structured log entries to our external audit file."""
     # timestamping every action for audit integrity
@@ -22,17 +23,11 @@ def write_audit_log(user, action, target_file, status):
     finally:
         f.close()
 
-# baseline file system map layout
-mock_dir = {}
-
-def create(filename):
-    # simple directory storage map update
-    mock_dir[filename] = ""
-    print("file initialized")
 
 def hash_password(password):
     """hashes a plain text password using sha-256."""
     return hashlib.sha256(password.encode()).hexdigest()
+
 
 # custom streamcipher logic to handle file encryption/decryption at rest
 def run_xor_cipher(data, key):
@@ -46,9 +41,8 @@ def run_xor_cipher(data, key):
         output.append(chr(transformed_byte))
     return "".join(output)
 
+
 #access control matrix privileges evaluation function
-
-
 def check_permission(user_context, file_permissions, required_mode):
     """evaluates posix-like rwx configurations for owner/group/others."""
     parts = file_permissions.split(":")
@@ -73,7 +67,7 @@ def check_permission(user_context, file_permissions, required_mode):
 
 def authenticate_user():
     """simple credential verification terminal check."""
-    print("--- Secure File System Login --")
+    print("--- Secure File System Login ---")
     username = input("Enter Username: ").strip()
     password = input("Enter Password: ").strip()
 
@@ -91,6 +85,8 @@ def authenticate_user():
             parts = line.strip().split(":")
             if parts[0] == username and parts[1] == hashed_input:
                 print("Welcome back, " + username + "!")
+                # --- FIXED: ADDED SUCCESS AUDIT LOG RECORDING HOCK ---
+                write_audit_log(username, "LOGIN", "N/A", "SUCCESS")
                 return {"username": username, "group": parts[2]}
     finally:
         f.close()
@@ -98,6 +94,7 @@ def authenticate_user():
     print("Access Denied: Invalid credentials.")
     write_audit_log(username, "LOGIN", "N/A", "FAILED")
     return None
+
 
 #comprehensive oobject oriented secure shell interface
 class SecureFileSystem:
