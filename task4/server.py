@@ -3,7 +3,7 @@ import socket
 import threading
 
 HOST = "127.0.0.1"
-PORT = 8080
+PORT = 9090
 AUTH_TOKEN = "super_secret_ipc_token"  # basic authentication passkey
 
 def handle_client_connection(client_socket, client_address):

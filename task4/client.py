@@ -3,7 +3,7 @@ import socket
 import time
 
 HOST = "127.0.0.1"
-PORT = 8080
+PORT = 9090
 AUTH_TOKEN = "super_secret_ipc_token"
 
 def transmit_ipc_message(command, data_payload):
